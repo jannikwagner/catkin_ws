@@ -1,0 +1,4 @@
+- git:
+    local-name: irob_assignment_1
+    uri: https://github.com/danielduberg/irob_assignment_1.git
+    version: master

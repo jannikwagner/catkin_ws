@@ -1,0 +1,2 @@
+
+-G Unix Makefiles -DCATKIN_DEVEL_PREFIX=/home/w/a/wagne/catkin_ws/src/learning_tf2/devel_isolated -DCMAKE_INSTALL_PREFIX=/home/w/a/wagne/catkin_ws/src/learning_tf2/install_isolated
