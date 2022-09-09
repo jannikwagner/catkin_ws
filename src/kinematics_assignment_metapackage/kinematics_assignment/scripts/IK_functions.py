@@ -9,7 +9,7 @@ def scara_IK(point):
     x = point[0]
     y = point[1]
     z = point[2]
-    q = [0.0, 0.0, 0.0]
+    q = [0.0, 0.0, z]
 
     """
     Fill in your IK solution here and return the three joint values in q
