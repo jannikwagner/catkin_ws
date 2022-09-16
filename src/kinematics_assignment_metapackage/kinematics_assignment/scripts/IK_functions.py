@@ -125,7 +125,30 @@ def kuka_FK(q):
     return np.array((*r, *euler))
 
 
-def get_transform(a, alpha, d, q):
+def get_transform(a, alpha, d, theta):
+    Trans_z_d = get_translation_z(d)
+    R_z_q = get_rotation_z(theta)
+    Trans_x_a = get_translation_x(a)
+    R_x_alpha = get_rotation_x(alpha)
+
+    T = Trans_z_d @ R_z_q @ Trans_x_a @ R_x_alpha
+
+    return T
+
+
+def get_translation_z(d):
+    raise NotImplementedError()
+
+
+def get_rotation_z(theta):
+    raise NotImplementedError()
+
+
+def get_translation_x(a):
+    raise NotImplementedError()
+
+
+def get_rotation_x(alpha):
     raise NotImplementedError()
 
 
