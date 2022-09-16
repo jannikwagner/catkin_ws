@@ -114,19 +114,35 @@ def kuka_IK(point, R, joint_positions):
 
 
 def kuka_FK(q):
-    pass
+    T = np.eye(4)
+    euler = np.zeros(3)
+    for (a_i, alpha_i, d_i), q_i in zip(KUKA_DH, q):
+        im1_T_i = get_transform(a_i, alpha_i, d_i, q_i)
+        T = T @ im1_T_i
+        euler = update_euler(euler, alpha_i, q_i)
+
+    r = T @ np.array([0, 0, 0, 1])
+    return np.array((*r, *euler))
+
+
+def get_transform(a, alpha, d, q):
+    raise NotImplementedError()
+
+
+def update_euler(euler, alpha_i, q_i):
+    raise NotImplementedError()
 
 
 def get_euler_rotation(R):
-    pass
+    raise NotImplementedError()
 
 
 def get_jacobian(q):
-    pass
+    raise NotImplementedError()
 
 
 def invert(J):
-    pass
+    raise NotImplementedError()
 
 
 def test_scara():
