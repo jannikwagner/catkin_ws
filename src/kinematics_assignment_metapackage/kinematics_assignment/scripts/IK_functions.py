@@ -137,19 +137,39 @@ def get_transform(a, alpha, d, theta):
 
 
 def get_translation_z(d):
-    raise NotImplementedError()
+    return np.array([
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 1, d],
+        [0, 0, 0, 1]
+    ]).astype(float)
 
 
 def get_rotation_z(theta):
-    raise NotImplementedError()
+    return np.array([
+        [math.cos(theta), - math.sin(theta), 0, 0],
+        [math.sin(theta), math.cos(theta), 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1]
+    ]).astype(float)
 
 
 def get_translation_x(a):
-    raise NotImplementedError()
+    return np.array([
+        [1, 0, 0, a],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1]
+    ]).astype(float)
 
 
 def get_rotation_x(alpha):
-    raise NotImplementedError()
+    return np.array([
+        [1, 0, 0, 0],
+        [0, math.cos(alpha), -math.sin(alpha), 0],
+        [0, math.sin(alpha), math.cos(alpha), 0],
+        [0, 0, 0, 1]
+    ]).astype(float)
 
 
 def update_euler(euler, alpha_i, q_i):
