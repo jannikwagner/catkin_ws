@@ -9,12 +9,26 @@ import math
 import random
 import numpy as np
 
-scara_l = 0.07, 0.3, 0.35
+SCARA_L = 0.07, 0.3, 0.35
+
+M = 0.39
+L = 0.4
+kuka_values = [0.322, L, M, 0.078]  # ?
+
+KUKA_DH = np.array([
+    [math.pi / 2, 0, 0],
+    [- math.pi / 2, 0, 0],
+    [- math.pi / 2, L, 0],
+    [math.pi / 2, 0, 0],
+    [math.pi / 2, M, 0],
+    [- math.pi / 2, 0, 0],
+    [0, 0, 0],
+])
 
 
 def scara_IK(point):
 
-    q = geometric_scara(point)
+    q = geometric_scara_IK(point)
 
     """
     Fill in your IK solution here and return the three joint values in q
@@ -23,8 +37,8 @@ def scara_IK(point):
     return q
 
 
-def analytic_scara(point):
-    l0, l1, l2 = scara_l
+def analytic_scara_IK(point):
+    l0, l1, l2 = SCARA_L
     x, y, z = point
 
     q3 = z
@@ -45,8 +59,8 @@ def analytic_scara(point):
     return q
 
 
-def geometric_scara(point):
-    l0, l1, l2 = scara_l
+def geometric_scara_IK(point):
+    l0, l1, l2 = SCARA_L
     x, y, z = point
 
     q3 = z
@@ -68,7 +82,7 @@ def geometric_scara(point):
 
 def scara_FK(q):
     q1, q2, q3 = q
-    l0, l1, l2 = scara_l
+    l0, l1, l2 = SCARA_L
 
     x = l0 + math.cos(q1) * l1 + math.cos(q1+q2) * l2
     y = math.sin(q1) * l1 + math.sin(q1+q2) * l2
@@ -117,7 +131,7 @@ def invert(J):
 
 def test_scara():
     VERBOSE = False
-    l0, l1, l2 = scara_l
+    l0, l1, l2 = SCARA_L
 
     point = (l0+l1+l2-0.1, 0, 0)
     print(scara_IK(point))
@@ -131,8 +145,8 @@ def test_scara():
             d_gamma, random.random()
         point = scara_FK(q)
 
-        q_ana = analytic_scara(point)
-        q_geo = geometric_scara(point)
+        q_ana = analytic_scara_IK(point)
+        q_geo = geometric_scara_IK(point)
 
         x_ana = scara_FK(q_ana)
         x_geo = scara_FK(q_geo)
