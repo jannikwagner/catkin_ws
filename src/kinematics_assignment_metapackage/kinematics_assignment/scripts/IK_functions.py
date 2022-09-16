@@ -7,13 +7,14 @@
 
 import math
 import random
+import numpy as np
 
 scara_l = 0.07, 0.3, 0.35
 
 
 def scara_IK(point):
 
-    q = geometric(point)
+    q = geometric_scara(point)
 
     """
     Fill in your IK solution here and return the three joint values in q
@@ -22,7 +23,7 @@ def scara_IK(point):
     return q
 
 
-def analytic(point):
+def analytic_scara(point):
     l0, l1, l2 = scara_l
     x, y, z = point
 
@@ -40,11 +41,11 @@ def analytic(point):
 
     q1 = math.atan2(s1, c1)
 
-    q = [q1, q2, q3]
+    q = np.array((q1, q2, q3))
     return q
 
 
-def geometric(point):
+def geometric_scara(point):
     l0, l1, l2 = scara_l
     x, y, z = point
 
@@ -61,20 +62,7 @@ def geometric(point):
 
     q1 = alpha + beta * (1 if q2 < 0 else -1)
 
-    q = [q1, q2, q3]
-    return q
-
-
-def kuka_IK(point, R, joint_positions):
-    x = point[0]
-    y = point[1]
-    z = point[2]
-    q = joint_positions  # it must contain 7 elements
-
-    """
-    Fill in your IK solution here and return the seven joint values in q
-    """
-
+    q = np.array((q1, q2, q3))
     return q
 
 
@@ -86,27 +74,84 @@ def scara_FK(q):
     y = math.sin(q1) * l1 + math.sin(q1+q2) * l2
     z = q3
 
-    return (x, y, z)
+    return np.array((x, y, z))
 
 
-def test():
+def kuka_IK(point, R, joint_positions):
+    euler_desired = get_euler_rotation(R)
+    X_desired = np.array((*point, *euler_desired))
 
+    threshold = 0.1
+    q_current = np.array(joint_positions)
+    X_current = kuka_FK(q_current)
+    while np.sum((X_current - X_desired)**2) > threshold:
+        X_diff = X_current - X_desired
+        J = get_jacobian(q_current)
+        J_inv = invert(J)
+        q_diff = J_inv @ X_diff
+        q_current -= q_diff
+        X_current = kuka_FK(q_current)
+
+    """
+    Fill in your IK solution here and return the seven joint values in q
+    """
+
+    return q_current
+
+
+def kuka_FK(q):
+    pass
+
+
+def get_euler_rotation(R):
+    pass
+
+
+def get_jacobian(q):
+    pass
+
+
+def invert(J):
+    pass
+
+
+def test_scara():
+    VERBOSE = False
     l0, l1, l2 = scara_l
 
     point = (l0+l1+l2-0.1, 0, 0)
     print(scara_IK(point))
 
-    for i in range(100):
+    gamma_0 = 0*math.pi
+    d_gamma = 2*math.pi
 
-        q = random.random()*2*math.pi, random.random()*2*math.pi, random.random()
-        print("q:", q)
+    for _ in range(100):
+
+        q = gamma_0+random.random()*d_gamma, gamma_0+random.random() * \
+            d_gamma, random.random()
         point = scara_FK(q)
-        print("x:", point)
-        q_ana = analytic(point)
-        q_geo = geometric(point)
-        print("q_ana:", q_ana)
-        print("q_geo:", q_geo)
+
+        q_ana = analytic_scara(point)
+        q_geo = geometric_scara(point)
+
+        x_ana = scara_FK(q_ana)
+        x_geo = scara_FK(q_geo)
+
+        if VERBOSE or np.sum((point - x_geo)**2) > 10**-10:
+            print("q:", q)
+            print("x:", point)
+            print("q_ana:", q_ana)
+            print("q_geo:", q_geo)
+            print("x_ana:", x_ana)
+            print("x_geo:", x_geo)
+            print(np.sum((point - x_geo)**2))
+            print(_)
+
+
+def test_kuka():
+    pass
 
 
 if __name__ == "__main__":
-    test()
+    # test_scara()
+    test_kuka()
