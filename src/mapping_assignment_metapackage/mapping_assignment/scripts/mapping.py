@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 """
-    # {student full name}
-    # {student id}
-    # {student email}
+    # {Jannik Wagner}
+    # {19971213-1433}
+    # {wagne@kth.se}
 """
 
 # Python standard library
@@ -102,7 +102,7 @@ class Mapping:
 
     def update_map(self, grid_map, pose, scan):
         """Updates the grid_map with the data from the laser scan and the pose.
-        
+
         For E: 
             Update the grid_map with self.occupied_space.
 
@@ -153,16 +153,37 @@ class Mapping:
         # The map resolution [m/cell]
         resolution = grid_map.get_resolution()
 
-
         """
         Fill in your solution here
         """
 
+        # E
+
+        #  Update the grid_map with self.occupied_space.
+        grid_map
+        for i, scan_range in enumerate(scan.ranges):
+            if scan_range <= scan.range_min or scan_range >= scan.range_max:
+                continue
+            angle = scan.angle_min + i*scan.angle_increment
+
+        # Return the updated grid_map.
+
+        # You should use:
+        #     self.occupied_space  # For occupied space
+        self.occupied_space
+
+        #     You can use the function add_to_map to be sure that you add
+        #     values correctly to the map.
+        add_to_map
+
+        #     You can use the function is_in_bounds to check if a coordinate
+        #     is inside the map.
+        is_in_bounds
 
         """
         For C only!
         Fill in the update correctly below.
-        """ 
+        """
         # Only get the part that has been updated
         update = OccupancyGridUpdate()
         # The minimum x index in 'grid_map' that has been updated
@@ -184,7 +205,7 @@ class Mapping:
         """For C only!
         Inflate the map with self.c_space assuming the robot
         has a radius of self.radius.
-        
+
         Returns the inflated grid_map.
 
         Inflating the grid_map means that for each self.occupied_space
@@ -205,11 +226,9 @@ class Mapping:
         :type grid_map: GridMap
         """
 
-
         """
         Fill in your solution here
         """
 
-        
         # Return the inflated map
         return grid_map
