@@ -13,7 +13,7 @@ from math import cos, sin, atan2, fabs
 import numpy as np
 
 # "Local version" of ROS messages
-from local.geometry_msgs import PoseStamped, Quaternion
+from local.geometry_msgs import Pose, PoseStamped, Quaternion
 from local.sensor_msgs import LaserScan
 from local.map_msgs import OccupancyGridUpdate
 
@@ -147,9 +147,11 @@ class Mapping:
 
         # Current yaw of the robot
         robot_yaw = self.get_yaw(pose.pose.orientation)
+        robot_position = np.array([pose.pose.position.x, pose.pose.position.y])
         # The origin of the map [m, m, rad]. This is the real-world pose of the
         # cell (0,0) in the map.
         origin = grid_map.get_origin()
+        origin_position = np.array([origin.position.x, origin.position.y])
         # The map resolution [m/cell]
         resolution = grid_map.get_resolution()
 
@@ -159,26 +161,21 @@ class Mapping:
 
         # E
 
-        #  Update the grid_map with self.occupied_space.
-        grid_map
+        points = []
+
         for i, scan_range in enumerate(scan.ranges):
             if scan_range <= scan.range_min or scan_range >= scan.range_max:
                 continue
             angle = scan.angle_min + i*scan.angle_increment
+            # pos_laser = np.array([scan_range, 0])
+            pos_robot = np.array((cos(angle), sin(angle)))*scan_range
 
-        # Return the updated grid_map.
-
-        # You should use:
-        #     self.occupied_space  # For occupied space
-        self.occupied_space
-
-        #     You can use the function add_to_map to be sure that you add
-        #     values correctly to the map.
-        add_to_map
-
-        #     You can use the function is_in_bounds to check if a coordinate
-        #     is inside the map.
-        is_in_bounds
+            pos = rotate(pos_robot, robot_yaw)
+            pos = pos + robot_position
+            pos = pos - origin_position
+            x, y = pos / resolution
+            points.append(x, y)
+            self.add_to_map(grid_map, x, y, self.occupied_space)
 
         """
         For C only!
@@ -223,7 +220,7 @@ class Mapping:
             You can use the function is_in_bounds to check if a coordinate
             is inside the map.
 
-        :type grid_map: GridMap
+        :type griget_widthd_map: GridMap
         """
 
         """
@@ -232,3 +229,11 @@ class Mapping:
 
         # Return the inflated map
         return grid_map
+
+
+def rotate(v, alpha):
+    M = np.array([
+        [cos(alpha), -sin(alpha)],
+        [sin(alpha), cos(alpha)]
+    ])
+    return np.dot(M, v)
