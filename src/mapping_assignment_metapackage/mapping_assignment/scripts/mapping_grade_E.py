@@ -161,8 +161,6 @@ class Mapping:
 
         # E
 
-        points = []
-
         for i, ray_range in enumerate(scan.ranges):
             if ray_range <= scan.range_min or ray_range >= scan.range_max:
                 continue
@@ -171,61 +169,29 @@ class Mapping:
             # pos_laser = np.array([scan_range, 0])
             pos = np.array((cos(angle), sin(angle)))*ray_range
 
-            # pos = rotate(pos, robot_yaw)
             pos = pos + robot_position
             pos = pos - origin_position
             pos = pos / resolution
             pos = pos.astype(int)
             x, y = pos
-
-            # C
-            points.append((x, y))
-            pos_robot = robot_position - origin_position
-            pos_robot = pos_robot / resolution
-            pos_robot = pos_robot.astype(int)
-            ray_points = self.raytrace(pos_robot, pos)
-            for point in ray_points:
-                x_p, y_p = point
-                x_p, y_p = int(x_p), int(y_p)
-                if grid_map[x_p, y_p] in [self.unknown_space, self.c_space]:
-                    self.add_to_map(grid_map, x_p, y_p, self.free_space)
-                    points.append((x_p, y_p))
-
-            # E
             self.add_to_map(grid_map, x, y, self.occupied_space)
 
         """
         For C only!
         Fill in the update correctly below.
         """
-        x_min = min(p[0] for p in points)
-        x_max = max(p[0] for p in points)
-        y_min = min(p[1] for p in points)
-        y_max = max(p[1] for p in points)
-        # print(points)
-        # print(x_min, x_max, y_min, y_max)
-
         # Only get the part that has been updated
         update = OccupancyGridUpdate()
         # The minimum x index in 'grid_map' that has been updated
-        update.x = x_min
+        update.x = 0
         # The minimum y index in 'grid_map' that has been updated
-        update.y = y_min
+        update.y = 0
         # Maximum x index - minimum x index + 1
-        update.width = x_max - x_min + 1
+        update.width = 0
         # Maximum y index - minimum y index + 1
-        update.height = y_max - y_min + 1
+        update.height = 0
         # The map data inside the rectangle, in row-major order.
-        data = grid_map._GridMap__map[x_min:x_max +
-                                      1, y_min:y_max+1].astype(int)
-        # print(data)
-        # print(data.min())
-        # print(data.max())
-        # print(set(data.flatten()))
-        # # data = [list(row) for row in data]
-        # # print(data)
-        update.data = list(data.T.flatten())
-        # update.data = []
+        update.data = []
 
         # Return the updated map together with only the
         # part of the map that has been updated
@@ -260,30 +226,5 @@ class Mapping:
         Fill in your solution here
         """
 
-        pixel_radius = self.radius
-        offsets = []
-        for dx in range(-pixel_radius, pixel_radius+1):
-            for dy in range(-pixel_radius, pixel_radius+1):
-                if dx**2 + dy**2 <= pixel_radius**2:
-                    offsets.append((dx, dy))
-
-        for x in range(grid_map.get_width()):
-            for y in range(grid_map.get_height()):
-                if grid_map[x, y] == self.occupied_space:
-                    for dx, dy in offsets:
-                        x_p = x + dx
-                        y_p = y + dy
-                        # print(x_p, y_p)
-                        if self.is_in_bounds(grid_map, x_p, y_p) and grid_map[x_p, y_p] != self.occupied_space:
-                            self.add_to_map(grid_map, x_p, y_p, self.c_space)
-
-                            # Return the inflated map
+        # Return the inflated map
         return grid_map
-
-
-def rotate(v, alpha):
-    M = np.array([
-        [cos(alpha), -sin(alpha)],
-        [sin(alpha), cos(alpha)]
-    ])
-    return np.dot(M, v)
