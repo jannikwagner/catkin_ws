@@ -179,7 +179,7 @@ class Mapping:
             x, y = pos
 
             # C
-            points.append((x, y))
+            points.append((x, y, self.occupied_space))
             pos_robot = robot_position - origin_position
             pos_robot = pos_robot / resolution
             pos_robot = pos_robot.astype(int)
@@ -187,9 +187,8 @@ class Mapping:
             for point in ray_points:
                 x_p, y_p = point
                 x_p, y_p = int(x_p), int(y_p)
-                if grid_map[x_p, y_p] in [self.unknown_space, self.c_space]:
-                    self.add_to_map(grid_map, x_p, y_p, self.free_space)
-                    points.append((x_p, y_p))
+                self.add_to_map(grid_map, x_p, y_p, self.free_space)
+                points.append((x_p, y_p, self.free_space))
 
             # E
             self.add_to_map(grid_map, x, y, self.occupied_space)
@@ -198,33 +197,43 @@ class Mapping:
         For C only!
         Fill in the update correctly below.
         """
+        # self.inflate_map(grid_map)
+
         x_min = min(p[0] for p in points)
         x_max = max(p[0] for p in points)
         y_min = min(p[1] for p in points)
         y_max = max(p[1] for p in points)
-        # print(points)
-        # print(x_min, x_max, y_min, y_max)
+
+        update_width = x_max - x_min + 1
+        update_height = y_max - y_min + 1
+
+        # x_min = max(0, x_min - self.radius)
+        # y_min = max(0, y_min - self.radius)
+        # x_max = min(grid_map.get_width()-1, x_max + self.radius)
+        # y_min = min(grid_map.get_height()-1, y_max + self.radius)
 
         # Only get the part that has been updated
         update = OccupancyGridUpdate()
         # The minimum x index in 'grid_map' that has been updated
-        update.x = x_min
-        # The minimum y index in 'grid_map' that has been updated
-        update.y = y_min
-        # Maximum x index - minimum x index + 1
-        update.width = x_max - x_min + 1
-        # Maximum y index - minimum y index + 1
-        update.height = y_max - y_min + 1
-        # The map data inside the rectangle, in row-major order.
-        data = grid_map._GridMap__map[x_min:x_max +
-                                      1, y_min:y_max+1].astype(int)
-        # print(data)
-        # print(data.min())
-        # print(data.max())
-        # print(set(data.flatten()))
-        # # data = [list(row) for row in data]
-        # # print(data)
-        update.data = list(data.T.flatten())
+        UPDATE = True
+        if UPDATE:
+            update.x = x_min
+            # The minimum y index in 'grid_map' that has been updated
+            update.y = y_min
+            # Maximum x index - minimum x index + 1
+            update.width = update_width
+            # Maximum y index - minimum y index + 1
+            update.height = update_height
+            # The map data inside the rectangle, in row-major order.
+            data = grid_map[x_min:x_max +
+                            1, y_min:y_max+1].astype(int)
+            # print(data)
+            # print(data.min())
+            # print(data.max())
+            # print(set(data.flatten()))
+            # # data = [list(row) for row in data]
+            # # print(data)
+            update.data = list(data.flatten())
         # update.data = []
 
         # Return the updated map together with only the
