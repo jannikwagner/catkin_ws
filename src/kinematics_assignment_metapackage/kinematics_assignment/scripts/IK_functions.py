@@ -11,9 +11,11 @@ import numpy as np
 
 SCARA_L = 0.07, 0.3, 0.35
 
+D4 = 0.078
 M = 0.39
 L = 0.4
-kuka_values = [0.322, L, M, 0.078]  # ?
+D1 = 0.311
+kuka_values = [D1, L, M, D4]  # ?
 
 KUKA_DH = np.array([
     [math.pi / 2, 0, 0],
@@ -92,40 +94,51 @@ def scara_FK(q):
 
 
 def kuka_IK(point, R, joint_positions):
-    euler_desired = get_euler_rotation(R)
-    X_desired = np.array((*point, *euler_desired))
+    T = 200
+    threshold = 1e-6
 
-    threshold = 0.1
-    q_current = np.array(joint_positions)
-    X_current = kuka_FK(q_current)
-    while np.sum((X_current - X_desired)**2) > threshold:
-        X_diff = X_current - X_desired
-        J = get_jacobian(q_current)
+    x_desired = np.array(point)
+    R_desired = np.array(R)
+    q_current = np.array(joint_positions, dtype=np.float64)
+
+    for t in range(T):
+        x_current, R_current, Ts = kuka_FK(q_current)
+        dx = x_current - x_desired
+        # dR = R_current - R_desired
+        dR = d_rot3(R_desired, R_current)
+        dX = np.concatenate((dx, dR))
+
+        J = get_jacobian(x_current, Ts)
         J_inv = invert(J)
-        q_diff = J_inv @ X_diff
-        q_current -= q_diff
-        X_current = kuka_FK(q_current)
+        dq = J_inv @ dX
+        q_current -= dq
 
-    """
-    Fill in your IK solution here and return the seven joint values in q
-    """
+        if np.sum(dX**2) < threshold:
+            break
 
     return q_current
 
 
+def d_rot3(R1, R2):
+    return 0.5 * (np.cross(R1[:, 0], R2[:, 0]) + np.cross(R1[:, 1], R2[:, 1]) + np.cross(R1[:, 2], R2[:, 2]))
+
+
 def kuka_FK(q):
     T = np.eye(4)
-    euler = np.zeros(3)
-    for (a_i, alpha_i, d_i), q_i in zip(KUKA_DH, q):
-        im1_T_i = get_transform(a_i, alpha_i, d_i, q_i)
+    Ts = [T]
+    for (alpha_i, d_i, a_i), q_i in zip(KUKA_DH, q):
+        im1_T_i = get_transform(alpha_i, d_i, a_i, q_i)
         T = T @ im1_T_i
-        euler = update_euler(euler, alpha_i, q_i)
+        Ts.append(T)
 
-    r = T @ np.array([0, 0, 0, 1])
-    return np.array((*r, *euler))
+    R = T[:3, :3]
+    r = T @ np.array([0, 0, D1, 1])
+    r = r[:3] / r[3]
+    # what about D4?
+    return r, R, Ts
 
 
-def get_transform(a, alpha, d, theta):
+def get_transform(alpha, d, a, theta):
     Trans_z_d = get_translation_z(d)
     R_z_q = get_rotation_z(theta)
     Trans_x_a = get_translation_x(a)
@@ -172,20 +185,29 @@ def get_rotation_x(alpha):
     ]).astype(float)
 
 
-def update_euler(euler, alpha_i, q_i):
-    raise NotImplementedError()
+def get_jacobian(X, Ts):
+    J = []
 
+    pe = X
+    p0 = np.array([0, 0, D4, 1])
+    z0 = np.array([0, 0, 1])
 
-def get_euler_rotation(R):
-    raise NotImplementedError()
+    for t in range(len(Ts)-1):
+        T = Ts[t]
+        R = T[:3, :3]
+        z = R @ z0
+        p = T @ p0
+        p = p[:3] / p[3]
+        jp = np.cross(z, pe - p)
+        jo = z
+        J.append(np.concatenate((jp, jo)))
 
-
-def get_jacobian(q):
-    raise NotImplementedError()
+    J = np.array(J).T
+    return J
 
 
 def invert(J):
-    raise NotImplementedError()
+    return np.linalg.pinv(J)
 
 
 def test_scara():
@@ -222,7 +244,32 @@ def test_scara():
 
 
 def test_kuka():
-    pass
+    VERBOSE = False
+    q0 = (0, 0, 0, 0, 0, 0, 0)
+
+    point = (D1+L+M+D4-0.1, 0, 0)
+    R = np.eye(3)
+    print(kuka_IK(point, R, q0))
+
+    gamma_0 = 0*math.pi
+    d_gamma = 2*math.pi
+
+    for _ in range(100):
+
+        q = gamma_0+np.random.rand(7)*d_gamma
+        point, R, Ts = kuka_FK(q)
+
+        q_ana = kuka_IK(point, R, q0)
+
+        x_ana, R_ana, Ts_ana = kuka_FK(q_ana)
+
+        if VERBOSE or np.sum((point - x_ana)**2) > 10**-6:
+            print(_)
+            print("q:", q)
+            print("x:", point)
+            print("q_ana:", q_ana)
+            print("x_ana:", x_ana)
+            print(np.sum((point - x_ana)**2))
 
 
 if __name__ == "__main__":
