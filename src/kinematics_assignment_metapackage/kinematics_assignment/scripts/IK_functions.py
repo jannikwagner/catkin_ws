@@ -94,33 +94,34 @@ def scara_FK(q):
 
 
 def kuka_IK(point, R, joint_positions):
-    T = 200
+    iterations = 300
     threshold = 1e-6
 
     x_desired = np.array(point)
     R_desired = np.array(R)
     q_current = np.array(joint_positions, dtype=np.float64)
 
-    for t in range(T):
+    for _ in range(iterations):
         x_current, R_current, Ts = kuka_FK(q_current)
-        dx = x_current - x_desired
-        # dR = R_current - R_desired
-        dR = d_rot3(R_desired, R_current)
-        dX = np.concatenate((dx, dR))
-
         J = get_jacobian(x_current, Ts)
         J_inv = invert(J)
+
+        dx = x_current - x_desired
+        dR = d_rot(R_desired, R_current)
+        dX = np.concatenate((dx, dR))
+
         dq = J_inv @ dX
         q_current -= dq
 
+        # if converged
         if np.sum(dX**2) < threshold:
             break
 
     return q_current
 
 
-def d_rot3(R1, R2):
-    return 0.5 * (np.cross(R1[:, 0], R2[:, 0]) + np.cross(R1[:, 1], R2[:, 1]) + np.cross(R1[:, 2], R2[:, 2]))
+def d_rot(R1, R2):
+    return (np.cross(R1[:, 0], R2[:, 0]) + np.cross(R1[:, 1], R2[:, 1]) + np.cross(R1[:, 2], R2[:, 2])) / 2
 
 
 def kuka_FK(q):
@@ -132,9 +133,10 @@ def kuka_FK(q):
         Ts.append(T)
 
     R = T[:3, :3]
-    r = T @ np.array([0, 0, D1, 1])
+    r = T @ np.array([0, 0, D4, 1], dtype=np.float64)
     r = r[:3] / r[3]
-    # what about D4?
+
+    r[2] += D1
     return r, R, Ts
 
 
@@ -185,19 +187,21 @@ def get_rotation_x(alpha):
     ]).astype(float)
 
 
-def get_jacobian(X, Ts):
+def get_jacobian(x, Ts):
     J = []
 
-    pe = X
-    p0 = np.array([0, 0, D4, 1])
-    z0 = np.array([0, 0, 1])
+    pe = x
+    p0 = np.array([0, 0, D4, 1], dtype=np.float64)
+    z0 = np.array([0, 0, 1], dtype=np.float64)
 
-    for t in range(len(Ts)-1):
-        T = Ts[t]
+    for i in range(len(Ts)-1):
+        T = Ts[i]
         R = T[:3, :3]
+
         z = R @ z0
         p = T @ p0
         p = p[:3] / p[3]
+
         jp = np.cross(z, pe - p)
         jo = z
         J.append(np.concatenate((jp, jo)))
@@ -254,7 +258,7 @@ def test_kuka():
     gamma_0 = 0*math.pi
     d_gamma = 2*math.pi
 
-    for _ in range(100):
+    for i in range(100):
 
         q = gamma_0+np.random.rand(7)*d_gamma
         point, R, Ts = kuka_FK(q)
@@ -264,7 +268,7 @@ def test_kuka():
         x_ana, R_ana, Ts_ana = kuka_FK(q_ana)
 
         if VERBOSE or np.sum((point - x_ana)**2) > 10**-6:
-            print(_)
+            print(i)
             print("q:", q)
             print("x:", point)
             print("q_ana:", q_ana)
